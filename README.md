@@ -68,4 +68,4 @@ make clean
 
 ---
 
-Разработано [Taillogs](https://github.com/tailogs).
+Разработано [Tailogs](https://github.com/tailogs).

@@ -45,6 +45,11 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     HWND hWnd = CreateWindow("ColorPickerClass", "Color Picker", WS_OVERLAPPEDWINDOW & ~WS_THICKFRAME & ~WS_MAXIMIZEBOX,
                              CW_USEDEFAULT, CW_USEDEFAULT, 237, 386, NULL, NULL, hInstance, NULL);
 
+	// Установите иконку для главного окна
+	HICON hIcon = LoadIcon(hInstance, MAKEINTRESOURCE(IDI_ICON1));
+	SendMessage(hWnd, WM_SETICON, ICON_BIG, (LPARAM)hIcon);
+	SendMessage(hWnd, WM_SETICON, ICON_SMALL, (LPARAM)hIcon);
+
     ShowWindow(hWnd, nCmdShow);
     UpdateWindow(hWnd);
 
@@ -102,17 +107,17 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
         // Создаем элементы управления
         hLabelCoordinateX = CreateWindow("STATIC", "X:", WS_CHILD | WS_VISIBLE | SS_CENTER, 10, 10, 20, 20, hWnd, NULL, NULL, NULL);
-        hTextBoxCoordinateX = CreateWindowEx(WS_EX_CLIENTEDGE, "EDIT", "", WS_CHILD | WS_VISIBLE | ES_CENTER, 40, 10, 100, 20, hWnd, NULL, NULL, NULL);
+        hTextBoxCoordinateX = CreateWindowEx(WS_EX_CLIENTEDGE, "EDIT", "", WS_CHILD | WS_VISIBLE | ES_CENTER | ES_READONLY, 40, 10, 100, 20, hWnd, NULL, NULL, NULL);
         hLabelCoordinateY = CreateWindow("STATIC", "Y:", WS_CHILD | WS_VISIBLE | SS_CENTER, 10, 40, 20, 20, hWnd, NULL, NULL, NULL);
-        hTextBoxCoordinateY = CreateWindowEx(WS_EX_CLIENTEDGE, "EDIT", "", WS_CHILD | WS_VISIBLE | ES_CENTER, 40, 40, 100, 20, hWnd, NULL, NULL, NULL);
+        hTextBoxCoordinateY = CreateWindowEx(WS_EX_CLIENTEDGE, "EDIT", "", WS_CHILD | WS_VISIBLE | ES_CENTER | ES_READONLY, 40, 40, 100, 20, hWnd, NULL, NULL, NULL);
         hBtnCopyCoordinates = CreateWindow("BUTTON", "Copy", WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON, 150, 10, 70, 50, hWnd, (HMENU)2, NULL, NULL);
 
         hLabelColorRGB = CreateWindow("STATIC", "RGB:", WS_CHILD | WS_VISIBLE | SS_CENTER, 10, 70, 40, 20, hWnd, NULL, NULL, NULL);
-        hTextBoxColorRGB = CreateWindowEx(WS_EX_CLIENTEDGE, "EDIT", "", WS_CHILD | WS_VISIBLE | ES_CENTER, 60, 70, 160, 20, hWnd, NULL, NULL, NULL);
+        hTextBoxColorRGB = CreateWindowEx(WS_EX_CLIENTEDGE, "EDIT", "", WS_CHILD | WS_VISIBLE | ES_CENTER | ES_READONLY, 60, 70, 160, 20, hWnd, NULL, NULL, NULL);
         hBtnCopyRGB = CreateWindow("BUTTON", "Copy", WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON, 10, 100, 210, 20, hWnd, (HMENU)3, NULL, NULL);
 
         hLabelColorHEX = CreateWindow("STATIC", "HEX:", WS_CHILD | WS_VISIBLE | SS_CENTER, 10, 130, 40, 20, hWnd, NULL, NULL, NULL);
-        hTextBoxColorHEX = CreateWindowEx(WS_EX_CLIENTEDGE, "EDIT", "", WS_CHILD | WS_VISIBLE | ES_CENTER, 60, 130, 160, 20, hWnd, NULL, NULL, NULL);
+        hTextBoxColorHEX = CreateWindowEx(WS_EX_CLIENTEDGE, "EDIT", "", WS_CHILD | WS_VISIBLE | ES_CENTER | ES_READONLY, 60, 130, 160, 20, hWnd, NULL, NULL, NULL);
         hBtnCopyHEX = CreateWindow("BUTTON", "Copy", WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON, 10, 160, 210, 20, hWnd, (HMENU)4, NULL, NULL);
 
         hPanelColor = CreateWindowEx(WS_EX_CLIENTEDGE, "STATIC", "", WS_CHILD | WS_VISIBLE | SS_SUNKEN, 10, 190, 210, 100, hWnd, NULL, NULL, NULL);
