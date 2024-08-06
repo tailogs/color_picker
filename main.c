@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include "resource.h"
 
-#define VERSION "2.0.0"
+#define VERSION "2.2.0"
 
 #define TIMER_ID 1
 #define MAGNIFIER_WIDTH 150
@@ -18,6 +18,9 @@ HHOOK mouseHook;
 NOTIFYICONDATA nid; // Для работы с треем
 HFONT hFont;
 UINT_PTR timerId;
+// Объявите глобальные переменные для HDC и HBITMAP
+HDC hdcMem = NULL;
+HBITMAP hbmMem = NULL;
 
 // Прототипы функций
 LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);
@@ -110,18 +113,18 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         hTextBoxCoordinateX = CreateWindowEx(WS_EX_CLIENTEDGE, "EDIT", "", WS_CHILD | WS_VISIBLE | ES_CENTER | ES_READONLY, 40, 10, 100, 20, hWnd, NULL, NULL, NULL);
         hLabelCoordinateY = CreateWindow("STATIC", "Y:", WS_CHILD | WS_VISIBLE | SS_CENTER, 10, 40, 20, 20, hWnd, NULL, NULL, NULL);
         hTextBoxCoordinateY = CreateWindowEx(WS_EX_CLIENTEDGE, "EDIT", "", WS_CHILD | WS_VISIBLE | ES_CENTER | ES_READONLY, 40, 40, 100, 20, hWnd, NULL, NULL, NULL);
-        hBtnCopyCoordinates = CreateWindow("BUTTON", "Copy", WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON, 150, 10, 70, 50, hWnd, (HMENU)2, NULL, NULL);
+        hBtnCopyCoordinates = CreateWindow("BUTTON", "Copy", WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON | BS_OWNERDRAW, 150, 10, 70, 50, hWnd, (HMENU)2, NULL, NULL);
 
         hLabelColorRGB = CreateWindow("STATIC", "RGB:", WS_CHILD | WS_VISIBLE | SS_CENTER, 10, 70, 40, 20, hWnd, NULL, NULL, NULL);
         hTextBoxColorRGB = CreateWindowEx(WS_EX_CLIENTEDGE, "EDIT", "", WS_CHILD | WS_VISIBLE | ES_CENTER | ES_READONLY, 60, 70, 160, 20, hWnd, NULL, NULL, NULL);
-        hBtnCopyRGB = CreateWindow("BUTTON", "Copy", WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON, 10, 100, 210, 20, hWnd, (HMENU)3, NULL, NULL);
+        hBtnCopyRGB = CreateWindow("BUTTON", "Copy", WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON | BS_OWNERDRAW, 10, 100, 210, 20, hWnd, (HMENU)3, NULL, NULL);
 
         hLabelColorHEX = CreateWindow("STATIC", "HEX:", WS_CHILD | WS_VISIBLE | SS_CENTER, 10, 130, 40, 20, hWnd, NULL, NULL, NULL);
         hTextBoxColorHEX = CreateWindowEx(WS_EX_CLIENTEDGE, "EDIT", "", WS_CHILD | WS_VISIBLE | ES_CENTER | ES_READONLY, 60, 130, 160, 20, hWnd, NULL, NULL, NULL);
-        hBtnCopyHEX = CreateWindow("BUTTON", "Copy", WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON, 10, 160, 210, 20, hWnd, (HMENU)4, NULL, NULL);
+        hBtnCopyHEX = CreateWindow("BUTTON", "Copy", WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON | BS_OWNERDRAW, 10, 160, 210, 20, hWnd, (HMENU)4, NULL, NULL);
 
         hPanelColor = CreateWindowEx(WS_EX_CLIENTEDGE, "STATIC", "", WS_CHILD | WS_VISIBLE | SS_SUNKEN, 10, 190, 210, 100, hWnd, NULL, NULL, NULL);
-        hBtnStartAndStop = CreateWindow("BUTTON", "Start scanning flowers (Key -> P)", WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON, 10, 300, 210, 30, hWnd, (HMENU)1, NULL, NULL);
+        hBtnStartAndStop = CreateWindow("BUTTON", "Start scanning flowers (Key -> P)", WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON | BS_OWNERDRAW, 10, 300, 210, 30, hWnd, (HMENU)1, NULL, NULL);
 
         // Применяем шрифт и стиль к элементам управления
         SendMessage(hLabelCoordinateX, WM_SETFONT, (WPARAM)hFont, TRUE);
@@ -215,6 +218,167 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		}
 		break;
 
+
+    case WM_DRAWITEM: {
+            LPDRAWITEMSTRUCT dis = (LPDRAWITEMSTRUCT)lParam;
+            if (dis->CtlType == ODT_BUTTON) {
+                // Устанавливаем цвет фона и текста кнопки
+                HBRUSH hBrush = CreateSolidBrush(RGB(50, 50, 50));
+                if (dis->itemState & ODS_SELECTED) { // Если кнопка нажата
+                    hBrush = CreateSolidBrush(RGB(100, 100, 100)); // Тёмный фон
+                } else if (dis->itemState & ODS_HOTLIGHT) { // Если кнопка наведена
+                    hBrush = CreateSolidBrush(RGB(80, 80, 80)); // Светлый фон
+                } else {
+                    hBrush = CreateSolidBrush(RGB(50, 50, 50)); // Нормальный фон
+                }
+                FillRect(dis->hDC, &dis->rcItem, hBrush);
+                DeleteObject(hBrush);
+                
+                SetTextColor(dis->hDC, RGB(255, 255, 255));
+                SetBkMode(dis->hDC, TRANSPARENT);
+                
+                if (dis->hwndItem == hBtnCopyCoordinates) {
+                    DrawText(dis->hDC, "Copy", -1, &dis->rcItem, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
+                }
+                if (dis->hwndItem == hBtnCopyRGB) {
+                    DrawText(dis->hDC, "Copy", -1, &dis->rcItem, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
+                }
+                if (dis->hwndItem == hBtnCopyHEX) {
+                    DrawText(dis->hDC, "Copy", -1, &dis->rcItem, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
+                }
+                if (dis->hwndItem == hBtnStartAndStop) {
+                    DrawText(dis->hDC, "Start scanning flowers (Key -> P)", -1, &dis->rcItem, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
+                }
+            }
+        }
+        break;
+
+    case WM_CTLCOLORSTATIC: {
+            HDC hdc = (HDC)wParam;
+            SetBkColor(hdc, RGB(30, 30, 30));
+            SetTextColor(hdc, RGB(255, 255, 255));
+            return (INT_PTR)GetStockObject(NULL_BRUSH);
+        }
+        break;
+
+    case WM_CTLCOLORLISTBOX: {
+            HDC hdc = (HDC)wParam;
+            SetTextColor(hdc, RGB(255, 255, 255));
+            return (INT_PTR)GetStockObject(NULL_BRUSH);
+	    }
+	    break;
+
+	case WM_CTLCOLOREDIT: {
+            HDC hdc = (HDC)wParam;
+            SetBkColor(hdc, RGB(30, 30, 30)); //  
+            SetTextColor(hdc, RGB(255, 255, 255)); //  
+            return (INT_PTR)GetStockObject(NULL_BRUSH);
+        }
+        break;
+        
+    case WM_MOUSEMOVE: {
+            POINT pt;
+            pt.x = LOWORD(lParam);
+            pt.y = HIWORD(lParam);
+
+            RECT rect;
+            GetWindowRect(hWnd, &rect);
+
+            if (PtInRect(&rect, pt)) {
+                // Мышь находится внутри окна, не обновляем лупу
+                break;
+            }
+
+            // Обновляем только лупу
+            if (startAndStop) {
+                UpdateMagnifier(pt);
+            }
+        }
+        break;
+
+    case WM_LBUTTONDOWN: {
+            HWND hwndButton = (HWND)lParam;
+            if (GetDlgCtrlID(hwndButton) == 1) { // Пример для кнопки с ID 1
+                // Обработка нажатия на кнопку
+                SendMessage(hwndButton, BM_SETSTATE, TRUE, 0);
+                InvalidateRect(hwndButton, NULL, TRUE); // Перерисовываем кнопку
+            }
+        }
+        break;
+
+    case WM_LBUTTONUP: {
+            HWND hwndButton = (HWND)lParam;
+            if (GetDlgCtrlID(hwndButton) == 1) { // Пример для кнопки с ID 1
+                // Обработка отпускания кнопки
+                SendMessage(hwndButton, BM_SETSTATE, FALSE, 0);
+                InvalidateRect(hwndButton, NULL, TRUE); // Перерисовываем кнопку
+            }
+        }
+        break;
+
+    case WM_NCHITTEST: {
+            return HTTRANSPARENT; // Сделать окно лупы прозрачным для обработки мыши
+        }
+        break;
+
+    case WM_KEYDOWN: {
+            // Переменные для текущей позиции курсора
+            POINT pt;
+            GetCursorPos(&pt);
+
+            // Определяем шаг перемещения курсора (1 пиксель)
+            int moveStep = 1;
+
+            switch (wParam) {
+            case VK_LEFT: // Клавиша стрелка влево
+                SetCursorPos(pt.x - moveStep, pt.y);
+                pt.x -= moveStep;
+                break;
+            case VK_RIGHT: // Клавиша стрелка вправо
+                SetCursorPos(pt.x + moveStep, pt.y);
+                pt.x += moveStep;
+                break;
+            case VK_UP: // Клавиша стрелка вверх
+                SetCursorPos(pt.x, pt.y - moveStep);
+                pt.y -= moveStep;
+                break;
+            case VK_DOWN: // Клавиша стрелка вниз
+                SetCursorPos(pt.x, pt.y + moveStep);
+                pt.y += moveStep;
+                break;
+            case 0x57: // Клавиша W
+                SetCursorPos(pt.x, pt.y - moveStep);
+                pt.y -= moveStep;
+                break;
+            case 0x41: // Клавиша A
+                SetCursorPos(pt.x - moveStep, pt.y);
+                pt.x -= moveStep;
+                break;
+            case 0x53: // Клавиша S
+                SetCursorPos(pt.x, pt.y + moveStep);
+                pt.y += moveStep;
+                break;
+            case 0x44: // Клавиша D
+                SetCursorPos(pt.x + moveStep, pt.y);
+                pt.x += moveStep;
+                break;
+            case 0x50: // Клавиша P (для переключения сканирования)
+                if (startAndStop) {
+                    StopScanning(hWnd);
+                } else {
+                    StartScanning(hWnd);
+                    SetFocus(hWnd);
+                }
+                break;
+            }
+
+            // Обновляем лупу после перемещения курсора
+            if (startAndStop) {
+                UpdateMagnifier(pt);
+            }
+        }
+        break;
+
     case WM_CLOSE:
         ShowWindow(hWnd, SW_HIDE); // Скрываем окно вместо закрытия
         StopScanning(hWnd); // Останавливаем сканирование при скрытии окна
@@ -224,20 +388,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         Shell_NotifyIcon(NIM_DELETE, &nid); // Удаляем иконку трея
         DeleteObject(hFont); // Удаляем шрифт
         PostQuitMessage(0);
-        break;
-	
-	case WM_KEYDOWN:
-        if (wParam == 0x50) {
-			if (startAndStop)
-			{
-				StopScanning(hWnd);
-			}
-			else
-			{
-				StartScanning(hWnd);
-				SetFocus(hWnd);
-			}
-        }
         break;
 
     default:
@@ -291,7 +441,7 @@ void UpdateColorInfo()
 void CreateMagnifier()
 {
     WNDCLASS wc = { 0 };
-    wc.lpfnWndProc = DefWindowProc; // Используем дефолтный обработчик для лупы
+    wc.lpfnWndProc = DefWindowProc;
     wc.hInstance = GetModuleHandle(NULL);
     wc.lpszClassName = "MagnifierClass";
     RegisterClass(&wc);
@@ -299,33 +449,51 @@ void CreateMagnifier()
     hMagnifier = CreateWindow("MagnifierClass", "Magnifier", WS_POPUP | WS_BORDER | WS_VISIBLE,
                               0, 0, MAGNIFIER_WIDTH, MAGNIFIER_HEIGHT, NULL, NULL, GetModuleHandle(NULL), NULL);
     SetWindowPos(hMagnifier, HWND_TOPMOST, 0, 0, MAGNIFIER_WIDTH, MAGNIFIER_HEIGHT, SWP_NOMOVE | SWP_NOACTIVATE);
+
+    HDC hdcScreen = GetDC(NULL);
+    hdcMem = CreateCompatibleDC(hdcScreen);
+    hbmMem = CreateCompatibleBitmap(hdcScreen, MAGNIFIER_WIDTH, MAGNIFIER_HEIGHT);
+    ReleaseDC(NULL, hdcScreen);
 }
 
 void UpdateMagnifier(POINT pt)
 {
+    // Убедитесь, что ресурсы созданы
+    if (hdcMem == NULL || hbmMem == NULL) return;
+
     HDC hdcScreen = GetDC(NULL);
-    HDC hdcMem = CreateCompatibleDC(hdcScreen);
-    HBITMAP hbmMem = CreateCompatibleBitmap(hdcScreen, MAGNIFIER_WIDTH, MAGNIFIER_HEIGHT);
     HGDIOBJ hOldBmp = SelectObject(hdcMem, hbmMem);
 
-    // Выбираем область вокруг курсора
     int sourceX = pt.x - (MAGNIFIER_WIDTH / 2 / MAGNIFICATION_FACTOR);
     int sourceY = pt.y - (MAGNIFIER_HEIGHT / 2 / MAGNIFICATION_FACTOR);
 
-    // Захватываем область экрана в контексте устройства
     BitBlt(hdcMem, 0, 0, MAGNIFIER_WIDTH, MAGNIFIER_HEIGHT, hdcScreen, sourceX, sourceY, SRCCOPY);
 
-    // Масштабируем изображение
     HDC hdcMagnifier = GetDC(hMagnifier);
     StretchBlt(hdcMagnifier, 0, 0, MAGNIFIER_WIDTH, MAGNIFIER_HEIGHT, hdcMem, 0, 0, MAGNIFIER_WIDTH / MAGNIFICATION_FACTOR, MAGNIFIER_HEIGHT / MAGNIFICATION_FACTOR, SRCCOPY);
 
+    // Рисуем метку в центре лупы
+    int centerX = MAGNIFIER_WIDTH / 2;
+    int centerY = MAGNIFIER_HEIGHT / 2;
+
+    HPEN hPen = CreatePen(PS_SOLID, 1, RGB(255, 0, 0)); // Красный цвет для метки
+    HGDIOBJ hOldPen = SelectObject(hdcMagnifier, hPen);
+
+    // Рисуем крестик в центре лупы
+    MoveToEx(hdcMagnifier, centerX - 5, centerY, NULL);
+    LineTo(hdcMagnifier, centerX + 5, centerY);
+    
+    MoveToEx(hdcMagnifier, centerX, centerY - 5, NULL);
+    LineTo(hdcMagnifier, centerX, centerY + 5);
+
+    // Восстанавливаем старые объекты
+    SelectObject(hdcMagnifier, hOldPen);
+    DeleteObject(hPen);
+
     ReleaseDC(hMagnifier, hdcMagnifier);
     SelectObject(hdcMem, hOldBmp);
-    DeleteObject(hbmMem);
-    DeleteDC(hdcMem);
     ReleaseDC(NULL, hdcScreen);
 
-    // Перемещаем лупу рядом с курсором
     SetWindowPos(hMagnifier, HWND_TOPMOST, pt.x + 10, pt.y + 10, MAGNIFIER_WIDTH, MAGNIFIER_HEIGHT, SWP_NOACTIVATE | SWP_NOSIZE);
 }
 
